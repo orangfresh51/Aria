@@ -240,3 +240,245 @@
     .aria-dropdown-item { display: block; width: 100%; padding: 8px 12px; text-align: left; background: none; border: none; color: var(--text); cursor: pointer; border-radius: 6px; font-family: var(--font); font-size: 0.9rem; }
     .aria-dropdown-item:hover { background: rgba(255,255,255,0.08); }
     .aria-dropdown-item:first-child { margin-top: 0; }
+    .aria-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .aria-checkbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .aria-radio-group { display: flex; flex-direction: column; gap: 8px; }
+    .aria-radio { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .aria-radio input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .aria-switch { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: background 0.2s; }
+    .aria-switch.on { background: var(--accent); }
+    .aria-switch-thumb { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: var(--text); border-radius: 50%; transition: transform 0.2s; }
+    .aria-switch.on .aria-switch-thumb { transform: translateX(20px); }
+    .aria-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .aria-tag.filled { background: var(--accent-dim); border-color: var(--accent); color: var(--bg); }
+    .aria-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .aria-stat { padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+    .aria-stat-value { font-size: 1.25rem; font-weight: 600; color: var(--text); }
+    .aria-stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .aria-empty-state { padding: 48px 24px; text-align: center; color: var(--muted); }
+    .aria-empty-state-icon { font-size: 2rem; margin-bottom: 12px; opacity: 0.5; }
+    .aria-empty-state-title { font-size: 1rem; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+    .aria-empty-state-desc { font-size: 0.9rem; }
+    .aria-pagination { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .aria-pagination button { min-width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; }
+    .aria-pagination .current { font-size: 0.9rem; color: var(--muted); }
+    .aria-copy-btn { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
+    .aria-expand { transition: max-height 0.3s ease; overflow: hidden; }
+    .aria-collapse-trigger { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 0; background: none; border: none; color: var(--text); cursor: pointer; font-family: var(--font); font-size: 0.95rem; text-align: left; }
+    .aria-collapse-trigger:hover { color: var(--accent); }
+    .aria-collapse-icon { transition: transform 0.2s; }
+    .aria-collapse.open .aria-collapse-icon { transform: rotate(180deg); }
+    .aria-timeline { position: relative; padding-left: 24px; }
+    .aria-timeline::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .aria-timeline-item { position: relative; padding-bottom: 20px; }
+    .aria-timeline-item::before { content: ''; position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+    .aria-timeline-item .time { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    .aria-timeline-item .content { font-size: 0.9rem; }
+    .aria-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+    .aria-toolbar .spacer { flex: 1; }
+    .aria-list { list-style: none; }
+    .aria-list li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .aria-list li:last-child { border-bottom: none; }
+    .aria-list li a { color: var(--accent); }
+    .aria-list li a:hover { text-decoration: underline; }
+    .aria-dl { display: grid; gap: 8px; }
+    .aria-dl dt { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+    .aria-dl dd { font-size: 0.95rem; margin: 0; }
+    .aria-kbd { display: inline-block; padding: 2px 6px; font-family: ui-monospace, monospace; font-size: 0.8rem; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; }
+    .aria-log { font-family: ui-monospace, monospace; font-size: 0.75rem; background: var(--bg); padding: 12px; border-radius: 8px; max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all; color: var(--muted); }
+    .aria-watermark { position: fixed; bottom: 16px; right: 16px; font-size: 0.7rem; color: var(--muted); opacity: 0.5; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Aria</h1>
+        <span class="badge">Anna clawbot interface</span>
+      </div>
+      <div class="row">
+        <button id="btn-connect" type="button">Connect wallet</button>
+        <span id="wallet-addr" class="value mono" style="font-size:0.85rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;"></span>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>Contract &amp; network</h2>
+      <div class="row">
+        <div class="col">
+          <div class="label">RPC URL</div>
+          <input type="text" id="input-rpc" placeholder="https://eth.llamarpc.com" />
+        </div>
+        <div class="col">
+          <div class="label">Anna contract address</div>
+          <input type="text" id="input-contract" placeholder="0x..." />
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button id="btn-save-config" type="button" class="secondary">Save</button>
+        <button id="btn-refresh" type="button">Refresh status</button>
+      </div>
+    </div>
+
+    <div id="msg-area"></div>
+
+    <div class="card">
+      <h2>Status</h2>
+      <div class="grid2">
+        <div class="col">
+          <div class="label">Chain ID</div>
+          <div id="stat-chain" class="value">—</div>
+        </div>
+        <div class="col">
+          <div class="label">Claw</div>
+          <div id="stat-claw" class="value"><span class="status-dot"></span>—</div>
+        </div>
+        <div class="col">
+          <div class="label">Order count</div>
+          <div id="stat-orders" class="value">—</div>
+        </div>
+        <div class="col">
+          <div class="label">Position count</div>
+          <div id="stat-positions" class="value">—</div>
+        </div>
+        <div class="col">
+          <div class="label">Total staked</div>
+          <div id="stat-staked" class="value">—</div>
+        </div>
+        <div class="col">
+          <div class="label">Contract balance</div>
+          <div id="stat-contract-bal" class="value">—</div>
+        </div>
+        <div class="col">
+          <div class="label">Vault balance</div>
+          <div id="stat-vault-bal" class="value">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button type="button" data-tab="orders">Orders</button>
+      <button type="button" data-tab="positions">Positions</button>
+      <button type="button" data-tab="strategies">Strategies</button>
+      <button type="button" data-tab="rounds">Rounds</button>
+      <button type="button" data-tab="actions">Actions</button>
+    </div>
+
+    <div id="tab-orders" class="tab-panel card">
+      <h2>Orders</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input type="number" id="order-id" placeholder="Order ID" min="1" style="max-width:120px" />
+        <button id="btn-get-order" type="button" class="secondary">Get order</button>
+      </div>
+      <pre id="order-detail" class="value mono" style="font-size:0.8rem;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto;"></pre>
+    </div>
+
+    <div id="tab-positions" class="tab-panel card">
+      <h2>Positions</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input type="number" id="position-id" placeholder="Position ID" min="1" style="max-width:120px" />
+        <button id="btn-get-position" type="button" class="secondary">Get position</button>
+      </div>
+      <pre id="position-detail" class="value mono" style="font-size:0.8rem;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto;"></pre>
+    </div>
+
+    <div id="tab-strategies" class="tab-panel card">
+      <h2>Strategies</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input type="number" id="strategy-id" placeholder="Strategy ID" min="0" style="max-width:120px" />
+        <button id="btn-get-strategy" type="button" class="secondary">Get strategy</button>
+      </div>
+      <pre id="strategy-detail" class="value mono" style="font-size:0.8rem;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto;"></pre>
+    </div>
+
+    <div id="tab-rounds" class="tab-panel card">
+      <h2>Rounds</h2>
+      <div class="row" style="margin-bottom:12px">
+        <input type="number" id="round-id" placeholder="Round ID" min="1" style="max-width:120px" />
+        <button id="btn-get-round" type="button" class="secondary">Get round</button>
+      </div>
+      <pre id="round-detail" class="value mono" style="font-size:0.8rem;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow:auto;"></pre>
+    </div>
+
+    <div id="tab-actions" class="tab-panel card">
+      <h2>Actions</h2>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:16px">Requires connected wallet and Anna contract.</p>
+      <div class="list-item">
+        <div class="label">Deposit stake (ETH)</div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="action-deposit-amount" placeholder="0.1" style="max-width:120px" />
+          <button id="btn-deposit-stake" type="button">Deposit stake</button>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="label">Top treasury (ETH)</div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="action-treasury-amount" placeholder="0.01" style="max-width:120px" />
+          <button id="btn-top-treasury" type="button">Top treasury</button>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="label">Record deposit (ETH)</div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="action-record-amount" placeholder="0.01" style="max-width:120px" />
+          <button id="btn-record-deposit" type="button">Record deposit</button>
+        </div>
+      </div>
+      <div class="list-item">
+        <div class="label">Request withdraw stake</div>
+        <div class="row" style="margin-top:8px">
+          <input type="text" id="action-withdraw-amount" placeholder="0.1" style="max-width:120px" />
+          <button id="btn-request-withdraw" type="button">Request withdraw</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="card aria-section mt-3">
+      <h2 class="aria-section-title">Helpers</h2>
+      <div class="aria-stack">
+        <div class="aria-input-group">
+          <label>Wei to ETH</label>
+          <div class="row">
+            <input type="text" id="helper-wei" placeholder="1000000000000000000" class="font-mono" />
+            <button type="button" id="btn-wei-to-eth" class="secondary">Convert</button>
+          </div>
+          <div id="helper-wei-result" class="value text-muted text-small mt-1"></div>
+        </div>
+        <div class="aria-input-group">
+          <label>ETH to Wei</label>
+          <div class="row">
+            <input type="text" id="helper-eth" placeholder="1.0" class="font-mono" />
+            <button type="button" id="btn-eth-to-wei" class="secondary">Convert</button>
+          </div>
+          <div id="helper-eth-result" class="value text-muted text-small mt-1 font-mono break-all"></div>
+        </div>
+        <div class="aria-input-group">
+          <label>Deadline (minutes from now)</label>
+          <div class="row">
+            <input type="number" id="helper-deadline-min" placeholder="30" value="30" style="max-width:100px" />
+            <button type="button" id="btn-deadline" class="secondary">Get Unix timestamp</button>
+          </div>
+          <div id="helper-deadline-result" class="value text-muted text-small mt-1 font-mono"></div>
+        </div>
+        <div class="aria-input-group">
+          <label>EIP-55 checksum address</label>
+          <div class="row">
+            <input type="text" id="helper-address" placeholder="0x..." class="font-mono max-w-md" />
+            <button type="button" id="btn-checksum" class="secondary">Checksum</button>
+          </div>
+          <div id="helper-checksum-result" class="value text-muted text-small mt-1 font-mono break-all"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card aria-section mt-3">
+      <h2 class="aria-section-title">About Aria</h2>
+      <p class="text-muted text-small mb-2">Aria is the web interface for the Anna clawbot contract. It lets you view status, orders, positions, strategies, and rounds, and perform actions such as depositing stake, topping the treasury, recording deposits, and requesting withdrawals. Connect your wallet (e.g. MetaMask) and set the Anna contract address for your chain. All write operations require a connected wallet and will send transactions to the network.</p>
+      <p class="text-muted text-small mb-2">The Anna contract is an autonomous claw-style allocation and trading system. It supports strategy ticks, vault sweeps, order placement and execution, positions, stake deposits and withdraw requests, inference rounds, tasks, and capabilities. Use at your own risk. Always verify the contract address and RPC for your chain.</p>
+      <dl class="aria-dl">
+        <dt>Interface version</dt>
+        <dd>1.0</dd>
+        <dt>Contract</dt>
+        <dd>Anna (clawbot)</dd>
+        <dt>Companion app</dt>
+        <dd>Ami (CLI)</dd>

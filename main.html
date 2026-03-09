@@ -966,3 +966,245 @@
   </script>
   <script>
     (function() {
+      function parseWei(s) {
+        if (typeof s === 'number') return BigInt(s);
+        if (typeof s === 'bigint') return s;
+        s = String(s).trim();
+        if (s.startsWith('0x')) return BigInt(s);
+        return BigInt(s);
+      }
+      function formatEth(wei) {
+        const w = parseWei(wei);
+        const n = Number(w) / 1e18;
+        if (n >= 1e6) return n.toFixed(2) + ' M';
+        if (n >= 1e3) return n.toFixed(2) + ' K';
+        if (n >= 1) return n.toFixed(4);
+        if (n >= 0.0001) return n.toFixed(6);
+        return n.toExponential(4);
+      }
+      function formatAddress(addr) {
+        if (!addr || typeof addr !== 'string') return '—';
+        if (addr.length < 12) return addr;
+        return addr.slice(0, 6) + '...' + addr.slice(-4);
+      }
+      function formatBlock(block) {
+        const b = parseWei(block);
+        return '#' + b.toString();
+      }
+      function isZeroAddress(addr) {
+        if (!addr) return true;
+        const a = String(addr).toLowerCase();
+        return a === '0x0000000000000000000000000000000000000000';
+      }
+      function truncateHash(hash, start, end) {
+        if (!hash || hash.length <= (start || 6) + (end || 4)) return hash;
+        return hash.slice(0, start || 6) + '...' + hash.slice(-(end || 4));
+      }
+      function copyToClipboard(text) {
+        if (!navigator.clipboard) return false;
+        return navigator.clipboard.writeText(text).then(function() { return true; }).catch(function() { return false; });
+      }
+      function debounce(fn, ms) {
+        var t;
+        return function() {
+          var args = arguments;
+          clearTimeout(t);
+          t = setTimeout(function() { fn.apply(null, args); }, ms);
+        };
+      }
+      function throttle(fn, ms) {
+        var last = 0;
+        return function() {
+          var now = Date.now();
+          if (now - last >= ms) {
+            last = now;
+            fn.apply(null, arguments);
+          }
+        };
+      }
+      window.ARIA_util = {
+        parseWei: parseWei,
+        formatEth: formatEth,
+        formatAddress: formatAddress,
+        formatBlock: formatBlock,
+        isZeroAddress: isZeroAddress,
+        truncateHash: truncateHash,
+        copyToClipboard: copyToClipboard,
+        debounce: debounce,
+        throttle: throttle
+      };
+    })();
+  </script>
+  <script>
+    (function() {
+      var BPS_BASE = 10000;
+      function bpsOf(value, bps) {
+        var v = typeof value === 'bigint' ? value : BigInt(value);
+        return (v * BigInt(bps)) / BigInt(BPS_BASE);
+      }
+      function slippageMinOut(amountOut, slippageBps) {
+        return bpsOf(amountOut, BPS_BASE - slippageBps);
+      }
+      function feeFromAmount(amount, feeBps) {
+        return bpsOf(amount, feeBps);
+      }
+      function rewardFromAmount(amount, rewardBps) {
+        return bpsOf(amount, rewardBps);
+      }
+      window.ARIA_math = {
+        BPS_BASE: BPS_BASE,
+        bpsOf: bpsOf,
+        slippageMinOut: slippageMinOut,
+        feeFromAmount: feeFromAmount,
+        rewardFromAmount: rewardFromAmount
+      };
+    })();
+  </script>
+  <script>
+    /**
+     * Aria — Anna clawbot web interface
+     * This file provides the full UI for connecting to an Anna contract instance,
+     * viewing status (chain, claw paused, order count, position count, total staked,
+     * contract balance, vault balance), querying orders, positions, strategies, and
+     * rounds by ID, and performing actions: deposit stake, top treasury, record
+     * deposit, request withdraw stake. All write actions require a connected wallet
+     * (e.g. MetaMask) and the correct contract address for the target chain.
+     * Configuration (RPC URL and contract address) is stored in localStorage under
+     * the key 'aria_anna_config'. The page uses ethers.js when available for
+     * contract calls and transaction signing. Helper utilities include wei/ETH
+     * conversion, deadline timestamp from minutes, and EIP-55 address checksum.
+     * Constants: BPS_BASE 10000, default RPC https://eth.llamarpc.com.
+     * No server-side component; all logic runs in the browser.
+     */
+    (function() {
+      var ARIA_DOC = {
+        name: 'Aria',
+        version: '1.0',
+        contract: 'Anna',
+        app: 'Ami',
+        description: 'Web interface for Anna clawbot contract',
+        features: ['status', 'orders', 'positions', 'strategies', 'rounds', 'actions', 'helpers'],
+        storageKey: 'aria_anna_config',
+        defaultRpc: 'https://eth.llamarpc.com'
+      };
+      window.ARIA_DOC = ARIA_DOC;
+    })();
+  </script>
+  <script>
+    (function() {
+      function validateAddress(addr) {
+        if (!addr || typeof addr !== 'string') return false;
+        if (!addr.startsWith('0x')) return false;
+        var h = addr.slice(2).toLowerCase();
+        if (h.length !== 40) return false;
+        return /^[0-9a-f]+$/.test(h);
+      }
+      function validateWei(s) {
+        try {
+          if (typeof s === 'number' && s >= 0) return true;
+          if (typeof s === 'bigint' && s >= 0n) return true;
+          var n = BigInt(s);
+          return n >= 0n;
+        } catch (e) { return false; }
+        return false;
+      }
+      function validatePositiveInt(s) {
+        var n = parseInt(s, 10);
+        return !isNaN(n) && n >= 0 && n <= 0xFFFFFFFF;
+      }
+      function validateEthString(s) {
+        var n = parseFloat(s);
+        return !isNaN(n) && n >= 0 && isFinite(n);
+      }
+      window.ARIA_validate = {
+        address: validateAddress,
+        wei: validateWei,
+        positiveInt: validatePositiveInt,
+        ethString: validateEthString
+      };
+    })();
+  </script>
+  <script>
+    (function() {
+      var chainNames = {
+        1: 'Ethereum Mainnet',
+        11155111: 'Sepolia',
+        8453: 'Base',
+        10: 'Optimism',
+        42161: 'Arbitrum One',
+        137: 'Polygon',
+        56: 'BNB Chain'
+      };
+      function getChainName(chainId) {
+        var id = typeof chainId === 'string' ? parseInt(chainId, 10) : chainId;
+        return chainNames[id] || ('Chain ' + id);
+      }
+      window.ARIA_chains = { names: chainNames, getChainName: getChainName };
+    })();
+  </script>
+  <script>
+    (function() {
+      function safeJsonStringify(obj) {
+        try {
+          return JSON.stringify(obj, function(k, v) {
+            if (typeof v === 'bigint') return v.toString();
+            return v;
+          }, 2);
+        } catch (e) { return String(obj); }
+      }
+      function safeJsonParse(s, fallback) {
+        try {
+          return JSON.parse(s);
+        } catch (e) { return fallback !== undefined ? fallback : null; }
+        return null;
+      }
+      function getStorage(key, fallback) {
+        try {
+          var v = localStorage.getItem(key);
+          return v !== null ? safeJsonParse(v, v) : fallback;
+        } catch (e) { return fallback; }
+      }
+      function setStorage(key, value) {
+        try {
+          localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+          return true;
+        } catch (e) { return false; }
+        return false;
+      }
+      function removeStorage(key) {
+        try {
+          localStorage.removeItem(key);
+          return true;
+        } catch (e) { return false; }
+        return false;
+      }
+      window.ARIA_storage = {
+        safeJsonStringify: safeJsonStringify,
+        safeJsonParse: safeJsonParse,
+        get: getStorage,
+        set: setStorage,
+        remove: removeStorage
+      };
+    })();
+  </script>
+  <script>
+    (function() {
+      var eventNames = ['ClawAllocation', 'VaultSweep', 'StrategyTick', 'OrderQueued', 'OrderFilled', 'OrderCancelled', 'TreasuryTopped', 'TreasuryWithdrawn', 'PositionOpened', 'PositionClosed', 'StakeDeposited', 'WithdrawRequested', 'WithdrawCompleted', 'DepositSwept', 'RoundOpened', 'RoundSealed', 'RoundFinalized', 'RewardDisbursed'];
+      function getEventNames() { return eventNames.slice(); }
+      window.ARIA_events = { list: eventNames, getEventNames: getEventNames };
+    })();
+  </script>
+  <script>
+    (function() {
+      function formatOrderForDisplay(o) {
+        if (!o) return '—';
+        return 'tokenIn: ' + (o.tokenIn || o[0]) + '\ntokenOut: ' + (o.tokenOut || o[1]) + '\namountIn: ' + (o.amountIn != null ? o.amountIn : o[2]) + '\namountOutMin: ' + (o.amountOutMin != null ? o.amountOutMin : o[3]) + '\ndeadline: ' + (o.deadline != null ? o.deadline : o[4]) + '\nfilled: ' + (o.filled != null ? o.filled : o[5]) + '\ncancelled: ' + (o.cancelled != null ? o.cancelled : o[6]) + '\nplacedAtBlock: ' + (o.placedAtBlock != null ? o.placedAtBlock : o[7]);
+      }
+      function formatPositionForDisplay(p) {
+        if (!p) return '—';
+        return 'user: ' + (p.user || p[0]) + '\nstrategyId: ' + (p.strategyId != null ? p.strategyId : p[1]) + '\nsizeWei: ' + (p.sizeWei != null ? p.sizeWei : p[2]) + '\nopenedAtBlock: ' + (p.openedAtBlock != null ? p.openedAtBlock : p[3]) + '\nentryPriceE8: ' + (p.entryPriceE8 != null ? p.entryPriceE8 : p[4]) + '\nclosed: ' + (p.closed != null ? p.closed : p[5]) + '\nrealisedWei: ' + (p.realisedWei != null ? p.realisedWei : p[6]);
+      }
+      function formatStrategyForDisplay(s) {
+        if (!s) return '—';
+        return 'allocCapWei: ' + (s.allocCapWei != null ? s.allocCapWei : s[0]) + '\nallocUsedWei: ' + (s.allocUsedWei != null ? s.allocUsedWei : s[1]) + '\ntickEpoch: ' + (s.tickEpoch != null ? s.tickEpoch : s[2]) + '\nlastTickBlock: ' + (s.lastTickBlock != null ? s.lastTickBlock : s[3]) + '\nsealed: ' + (s.sealed != null ? s.sealed : s[4]) + '\nactive: ' + (s.active != null ? s.active : s[5]) + '\nconfidenceTier: ' + (s.confidenceTier != null ? s.confidenceTier : s[6]);
+      }

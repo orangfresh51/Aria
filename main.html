@@ -724,3 +724,245 @@
         if (!amount) { showMsg('Enter amount', 'err'); return; }
         if (!signer) { showMsg('Connect wallet first', 'err'); return; }
         const c = buildContract();
+        if (!c) { showMsg('Contract not ready', 'err'); return; }
+        const p = getProvider();
+        if (!p) { showMsg('No wallet', 'err'); return; }
+        try {
+          const signerObj = new ethers.BrowserProvider(p).getSigner();
+          const cc = c.connect(signerObj);
+          const tx = await cc.depositStake({ value: etherToWei(amount) });
+          showMsg('Tx sent: ' + tx.hash, 'ok');
+          await tx.wait();
+          showMsg('Deposit confirmed.', 'ok');
+          refreshStatus();
+        } catch (e) {
+          showMsg('Failed: ' + (e.message || e), 'err');
+        }
+      }
+
+      async function topTreasury() {
+        const el = document.getElementById('action-treasury-amount');
+        if (!el) return;
+        const amount = el.value.trim();
+        if (!amount) { showMsg('Enter amount', 'err'); return; }
+        if (!signer) { showMsg('Connect wallet first', 'err'); return; }
+        const c = buildContract();
+        if (!c) { showMsg('Contract not ready', 'err'); return; }
+        const p = getProvider();
+        if (!p) { showMsg('No wallet', 'err'); return; }
+        try {
+          const signerObj = new ethers.BrowserProvider(p).getSigner();
+          const cc = c.connect(signerObj);
+          const tx = await cc.topTreasury({ value: etherToWei(amount) });
+          showMsg('Tx sent: ' + tx.hash, 'ok');
+          await tx.wait();
+          showMsg('Treasury topped.', 'ok');
+          refreshStatus();
+        } catch (e) {
+          showMsg('Failed: ' + (e.message || e), 'err');
+        }
+      }
+
+      async function recordDeposit() {
+        const el = document.getElementById('action-record-amount');
+        if (!el) return;
+        const amount = el.value.trim();
+        if (!amount) { showMsg('Enter amount', 'err'); return; }
+        if (!signer) { showMsg('Connect wallet first', 'err'); return; }
+        const c = buildContract();
+        if (!c) { showMsg('Contract not ready', 'err'); return; }
+        const p = getProvider();
+        if (!p) { showMsg('No wallet', 'err'); return; }
+        try {
+          const signerObj = new ethers.BrowserProvider(p).getSigner();
+          const cc = c.connect(signerObj);
+          const tx = await cc.recordDeposit({ value: etherToWei(amount) });
+          showMsg('Tx sent: ' + tx.hash, 'ok');
+          await tx.wait();
+          showMsg('Deposit recorded.', 'ok');
+          refreshStatus();
+        } catch (e) {
+          showMsg('Failed: ' + (e.message || e), 'err');
+        }
+      }
+
+      async function requestWithdraw() {
+        const el = document.getElementById('action-withdraw-amount');
+        if (!el) return;
+        const amount = el.value.trim();
+        if (!amount) { showMsg('Enter amount', 'err'); return; }
+        if (!signer) { showMsg('Connect wallet first', 'err'); return; }
+        const c = buildContract();
+        if (!c) { showMsg('Contract not ready', 'err'); return; }
+        const p = getProvider();
+        if (!p) { showMsg('No wallet', 'err'); return; }
+        try {
+          const signerObj = new ethers.BrowserProvider(p).getSigner();
+          const cc = c.connect(signerObj);
+          const tx = await cc.requestWithdrawStake(etherToWei(amount));
+          showMsg('Tx sent: ' + tx.hash, 'ok');
+          await tx.wait();
+          showMsg('Withdraw requested.', 'ok');
+          refreshStatus();
+        } catch (e) {
+          showMsg('Failed: ' + (e.message || e), 'err');
+        }
+      }
+
+      function initTabs() {
+        const tabs = document.querySelectorAll('.tabs button[data-tab]');
+        const panels = document.querySelectorAll('.tab-panel');
+        tabs.forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            const name = this.getAttribute('data-tab');
+            tabs.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(panel) {
+              panel.classList.toggle('active', panel.id === 'tab-' + name);
+            });
+            this.classList.add('active');
+          });
+        });
+        if (tabs[0]) tabs[0].classList.add('active');
+        const firstPanel = document.getElementById('tab-orders');
+        if (firstPanel) firstPanel.classList.add('active');
+      }
+
+      function initAbi() {
+        abi = [
+          { inputs: [], name: 'clawPaused', outputs: [{ type: 'bool' }], stateMutability: 'view', type: 'function' },
+          { inputs: [], name: 'getOrderCount', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [], name: 'positionCounter', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [], name: 'getTotalStakedWei', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [], name: 'getContractBalance', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [], name: 'getVaultBalance', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [{ name: 'orderId', type: 'uint256' }], name: 'getOrder', outputs: [{ type: 'address' }, { type: 'address' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'bool' }, { type: 'bool' }, { type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [{ name: 'positionId', type: 'uint256' }], name: 'getPosition', outputs: [{ type: 'address' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'bool' }, { type: 'uint256' }], stateMutability: 'view', type: 'function' },
+          { inputs: [{ name: 'strategyId', type: 'uint256' }], name: 'getStrategy', outputs: [{ type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'bool' }, { type: 'bool' }, { type: 'uint8' }], stateMutability: 'view', type: 'function' },
+          { inputs: [{ name: 'roundId', type: 'uint256' }], name: 'getRound', outputs: [{ type: 'bytes32' }, { type: 'bytes32' }, { type: 'uint256' }, { type: 'uint256' }, { type: 'bool' }, { type: 'uint8' }, { type: 'address' }], stateMutability: 'view', type: 'function' },
+          { inputs: [], name: 'depositStake', outputs: [], stateMutability: 'payable', type: 'function' },
+          { inputs: [], name: 'topTreasury', outputs: [], stateMutability: 'payable', type: 'function' },
+          { inputs: [], name: 'recordDeposit', outputs: [{ type: 'uint256' }], stateMutability: 'payable', type: 'function' },
+          { inputs: [{ name: 'amountWei', type: 'uint256' }], name: 'requestWithdrawStake', outputs: [], stateMutability: 'nonpayable', type: 'function' }
+        ];
+      }
+
+      function bind() {
+        document.getElementById('btn-connect')?.addEventListener('click', connectWallet);
+        document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
+        document.getElementById('btn-refresh')?.addEventListener('click', refreshStatus);
+        document.getElementById('btn-get-order')?.addEventListener('click', getOrder);
+        document.getElementById('btn-get-position')?.addEventListener('click', getPosition);
+        document.getElementById('btn-get-strategy')?.addEventListener('click', getStrategy);
+        document.getElementById('btn-get-round')?.addEventListener('click', getRound);
+        document.getElementById('btn-deposit-stake')?.addEventListener('click', depositStake);
+        document.getElementById('btn-top-treasury')?.addEventListener('click', topTreasury);
+        document.getElementById('btn-record-deposit')?.addEventListener('click', recordDeposit);
+        document.getElementById('btn-request-withdraw')?.addEventListener('click', requestWithdraw);
+      }
+
+      function weiToEthString(weiStr) {
+        try {
+          const w = BigInt(weiStr);
+          return (Number(w) / 1e18).toFixed(18);
+        } catch (e) { return ''; }
+      }
+      function ethToWeiString(ethStr) {
+        try {
+          const n = parseFloat(ethStr);
+          if (isNaN(n)) return '';
+          return BigInt(Math.floor(n * 1e18)).toString();
+        } catch (e) { return ''; }
+      }
+      function deadlineFromNowMinutes(min) {
+        return Math.floor(Date.now() / 1000) + (min * 60);
+      }
+      function showHelperWeiToEth() {
+        const el = document.getElementById('helper-wei');
+        const out = document.getElementById('helper-wei-result');
+        if (!el || !out) return;
+        const v = weiToEthString(el.value.trim());
+        out.textContent = v ? v + ' ETH' : '—';
+      }
+      function showHelperEthToWei() {
+        const el = document.getElementById('helper-eth');
+        const out = document.getElementById('helper-eth-result');
+        if (!el || !out) return;
+        const v = ethToWeiString(el.value.trim());
+        out.textContent = v || '—';
+      }
+      function showHelperDeadline() {
+        const el = document.getElementById('helper-deadline-min');
+        const out = document.getElementById('helper-deadline-result');
+        if (!el || !out) return;
+        const min = parseInt(el.value, 10) || 30;
+        out.textContent = String(deadlineFromNowMinutes(min));
+      }
+      function showHelperChecksum() {
+        const el = document.getElementById('helper-address');
+        const out = document.getElementById('helper-checksum-result');
+        if (!el || !out) return;
+        const addr = el.value.trim();
+        if (!addr || addr.length !== 42 || !addr.startsWith('0x')) {
+          out.textContent = 'Enter 0x + 40 hex';
+          return;
+        }
+        if (typeof ethers !== 'undefined' && ethers.getAddress) {
+          try {
+            out.textContent = ethers.getAddress(addr);
+          } catch (e) {
+            out.textContent = 'Invalid: ' + (e.message || e);
+          }
+        } else {
+          out.textContent = 'Load ethers.js for EIP-55 checksum';
+        }
+      }
+      document.getElementById('btn-wei-to-eth')?.addEventListener('click', showHelperWeiToEth);
+      document.getElementById('btn-eth-to-wei')?.addEventListener('click', showHelperEthToWei);
+      document.getElementById('btn-deadline')?.addEventListener('click', showHelperDeadline);
+      document.getElementById('btn-checksum')?.addEventListener('click', showHelperChecksum);
+      document.getElementById('btn-clear-debug')?.addEventListener('click', function() {
+        const a = document.getElementById('debug-chain');
+        const b = document.getElementById('debug-error');
+        if (a) a.textContent = '';
+        if (b) b.textContent = '';
+      });
+
+      loadConfig();
+      initAbi();
+      initTabs();
+      bind();
+    })();
+  </script>
+  <script>
+    (function() {
+      var ARIA_FULL_ABI = [
+        { "inputs": [], "name": "clawPaused", "outputs": [{ "type": "bool" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "getOrderCount", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "positionCounter", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "getTotalStakedWei", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "getContractBalance", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "getVaultBalance", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "name": "orderId", "type": "uint256" }], "name": "getOrder", "outputs": [{ "type": "address" }, { "type": "address" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "bool" }, { "type": "bool" }, { "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "name": "positionId", "type": "uint256" }], "name": "getPosition", "outputs": [{ "type": "address" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "bool" }, { "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "name": "strategyId", "type": "uint256" }], "name": "getStrategy", "outputs": [{ "type": "uint256" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "bool" }, { "type": "bool" }, { "type": "uint8" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "name": "roundId", "type": "uint256" }], "name": "getRound", "outputs": [{ "type": "bytes32" }, { "type": "bytes32" }, { "type": "uint256" }, { "type": "uint256" }, { "type": "bool" }, { "type": "uint8" }, { "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "depositStake", "outputs": [], "stateMutability": "payable", "type": "function" },
+        { "inputs": [], "name": "topTreasury", "outputs": [], "stateMutability": "payable", "type": "function" },
+        { "inputs": [], "name": "recordDeposit", "outputs": [{ "type": "uint256" }], "stateMutability": "payable", "type": "function" },
+        { "inputs": [{ "name": "amountWei", "type": "uint256" }], "name": "requestWithdrawStake", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+        { "inputs": [], "name": "governor", "outputs": [{ "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "treasury", "outputs": [{ "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "vault", "outputs": [{ "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "operator", "outputs": [{ "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "router", "outputs": [{ "type": "address" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "genesisBlock", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "getRoundCounter", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "name": "user", "type": "address" }], "name": "getUserStakeWei", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [{ "name": "user", "type": "address" }], "name": "getUserPositionCount", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" },
+        { "inputs": [], "name": "getTotalWithdrawnWei", "outputs": [{ "type": "uint256" }], "stateMutability": "view", "type": "function" }
+      ];
+      window.ARIA_FULL_ABI = ARIA_FULL_ABI;
+    })();
+  </script>
+  <script>
+    (function() {

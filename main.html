@@ -482,3 +482,245 @@
         <dd>Anna (clawbot)</dd>
         <dt>Companion app</dt>
         <dd>Ami (CLI)</dd>
+      </dl>
+    </section>
+
+    <section class="card aria-section mt-3 hidden" id="debug-section">
+      <h2 class="aria-section-title">Debug</h2>
+      <div class="aria-input-group mb-2">
+        <label>Last RPC response (chain ID)</label>
+        <pre id="debug-chain" class="aria-code"></pre>
+      </div>
+      <div class="aria-input-group mb-2">
+        <label>Last error</label>
+        <pre id="debug-error" class="aria-code"></pre>
+      </div>
+      <button type="button" id="btn-clear-debug" class="secondary">Clear</button>
+    </section>
+
+    <footer>
+      Aria — Web interface for Anna. Use at your own risk. Verify contract address on your chain.
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      const CONFIG_KEY = 'aria_anna_config';
+      const defaultRpc = 'https://eth.llamarpc.com';
+
+      let provider = null;
+      let signer = null;
+      let contract = null;
+      let contractAddress = '';
+      let rpcUrl = defaultRpc;
+      let abi = [];
+
+      function loadConfig() {
+        try {
+          const raw = localStorage.getItem(CONFIG_KEY);
+          if (raw) {
+            const c = JSON.parse(raw);
+            rpcUrl = c.rpcUrl || defaultRpc;
+            contractAddress = c.contractAddress || '';
+          }
+        } catch (e) {}
+        const rpcEl = document.getElementById('input-rpc');
+        const contractEl = document.getElementById('input-contract');
+        if (rpcEl) rpcEl.value = rpcUrl;
+        if (contractEl) contractEl.value = contractAddress;
+      }
+
+      function saveConfig() {
+        const rpcEl = document.getElementById('input-rpc');
+        const contractEl = document.getElementById('input-contract');
+        if (rpcEl) rpcUrl = rpcEl.value.trim();
+        if (contractEl) contractAddress = contractEl.value.trim();
+        localStorage.setItem(CONFIG_KEY, JSON.stringify({ rpcUrl, contractAddress }));
+        showMsg('Config saved.', 'ok');
+      }
+
+      function showMsg(text, type) {
+        const area = document.getElementById('msg-area');
+        if (!area) return;
+        const el = document.createElement('div');
+        el.className = 'msg ' + (type || 'info');
+        el.textContent = text;
+        area.appendChild(el);
+        setTimeout(function() { el.remove(); }, 6000);
+      }
+
+      function setStat(id, value) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function setClawStat(paused) {
+        const el = document.getElementById('stat-claw');
+        if (!el) return;
+        const dot = el.querySelector('.status-dot');
+        if (dot) {
+          dot.className = 'status-dot ' + (paused ? 'paused' : 'ok');
+        }
+        el.childNodes.forEach(function(n) {
+          if (n.nodeType === 3) n.textContent = paused ? 'Paused' : 'Active';
+        });
+      }
+
+      function weiToEther(wei) {
+        if (typeof wei === 'string') wei = BigInt(wei);
+        return Number(wei) / 1e18;
+      }
+
+      function etherToWei(eth) {
+        return BigInt(Math.floor(parseFloat(eth) * 1e18));
+      }
+
+      function getProvider() {
+        if (provider) return provider;
+        if (typeof window.ethereum !== 'undefined') {
+          provider = new window.ethereum;
+          return provider;
+        }
+        return null;
+      }
+
+      async function connectWallet() {
+        const p = getProvider();
+        if (!p) {
+          showMsg('No wallet (e.g. MetaMask) found.', 'err');
+          return;
+        }
+        try {
+          const accounts = await p.request({ method: 'eth_requestAccounts' });
+          if (accounts && accounts[0]) {
+            signer = { address: accounts[0] };
+            const el = document.getElementById('wallet-addr');
+            if (el) el.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
+            const btn = document.getElementById('btn-connect');
+            if (btn) btn.textContent = 'Connected';
+            showMsg('Wallet connected.', 'ok');
+          }
+        } catch (e) {
+          showMsg('Connection failed: ' + (e.message || e), 'err');
+        }
+      }
+
+      function buildContract() {
+        if (!contractAddress || !abi.length) return null;
+        if (typeof ethers === 'undefined') return null;
+        try {
+          const p = getProvider();
+          const prov = p ? new ethers.BrowserProvider(p) : new ethers.JsonRpcProvider(rpcUrl);
+          return new ethers.Contract(contractAddress, abi, prov);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function refreshStatus() {
+        const rpcEl = document.getElementById('input-rpc');
+        const contractEl = document.getElementById('input-contract');
+        if (rpcEl) rpcUrl = rpcEl.value.trim();
+        if (contractEl) contractAddress = contractEl.value.trim();
+        if (!contractAddress) {
+          showMsg('Set contract address first.', 'err');
+          return;
+        }
+        const c = buildContract();
+        if (!c) {
+          showMsg('Load ethers and set ABI, or use a chain with ethers.', 'err');
+          return;
+        }
+        try {
+          const [chainId, paused, orderCount, positionCount, totalStaked, contractBal, vaultBal] = await Promise.all([
+            c.runner?.provider?.getNetwork?.().then(n => n?.chainId?.toString()) || fetch(rpcUrl, { method: 'POST', body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId' }) }).then(r => r.json()).then(j => j.result ? parseInt(j.result, 16) : '—'),
+            c.clawPaused().catch(() => true),
+            c.getOrderCount().catch(() => 0n),
+            c.positionCounter ? c.positionCounter().catch(() => 0n) : 0n,
+            c.getTotalStakedWei().catch(() => 0n),
+            c.getContractBalance().catch(() => 0n),
+            c.getVaultBalance().catch(() => 0n)
+          ]);
+          setStat('stat-chain', typeof chainId === 'string' ? chainId : (chainId != null ? String(chainId) : '—'));
+          setClawStat(paused);
+          setStat('stat-orders', String(orderCount));
+          setStat('stat-positions', String(positionCount));
+          setStat('stat-staked', weiToEther(totalStaked).toFixed(6) + ' ETH');
+          setStat('stat-contract-bal', weiToEther(contractBal).toFixed(6) + ' ETH');
+          setStat('stat-vault-bal', weiToEther(vaultBal).toFixed(6) + ' ETH');
+        } catch (e) {
+          showMsg('Refresh failed: ' + (e.message || e), 'err');
+        }
+      }
+
+      async function getOrder() {
+        const idEl = document.getElementById('order-id');
+        const outEl = document.getElementById('order-detail');
+        if (!idEl || !outEl) return;
+        const id = idEl.value.trim();
+        if (!id) { outEl.textContent = 'Enter order ID'; return; }
+        const c = buildContract();
+        if (!c) { outEl.textContent = 'Contract not ready'; return; }
+        try {
+          const o = await c.getOrder(id);
+          outEl.textContent = JSON.stringify({ tokenIn: o[0], tokenOut: o[1], amountIn: o[2].toString(), amountOutMin: o[3].toString(), deadline: o[4].toString(), filled: o[5], cancelled: o[6], placedAtBlock: o[7].toString() }, null, 2);
+        } catch (e) {
+          outEl.textContent = 'Error: ' + (e.message || e);
+        }
+      }
+
+      async function getPosition() {
+        const idEl = document.getElementById('position-id');
+        const outEl = document.getElementById('position-detail');
+        if (!idEl || !outEl) return;
+        const id = idEl.value.trim();
+        if (!id) { outEl.textContent = 'Enter position ID'; return; }
+        const c = buildContract();
+        if (!c) { outEl.textContent = 'Contract not ready'; return; }
+        try {
+          const p = await c.getPosition(id);
+          outEl.textContent = JSON.stringify({ user: p[0], strategyId: p[1].toString(), sizeWei: p[2].toString(), openedAtBlock: p[3].toString(), entryPriceE8: p[4].toString(), closed: p[5], realisedWei: p[6].toString() }, null, 2);
+        } catch (e) {
+          outEl.textContent = 'Error: ' + (e.message || e);
+        }
+      }
+
+      async function getStrategy() {
+        const idEl = document.getElementById('strategy-id');
+        const outEl = document.getElementById('strategy-detail');
+        if (!idEl || !outEl) return;
+        const id = idEl.value.trim();
+        if (!id) { outEl.textContent = 'Enter strategy ID'; return; }
+        const c = buildContract();
+        if (!c) { outEl.textContent = 'Contract not ready'; return; }
+        try {
+          const s = await c.getStrategy(id);
+          outEl.textContent = JSON.stringify({ allocCapWei: s[0].toString(), allocUsedWei: s[1].toString(), tickEpoch: s[2].toString(), lastTickBlock: s[3].toString(), sealed: s[4], active: s[5], confidenceTier: s[6] }, null, 2);
+        } catch (e) {
+          outEl.textContent = 'Error: ' + (e.message || e);
+        }
+      }
+
+      async function getRound() {
+        const idEl = document.getElementById('round-id');
+        const outEl = document.getElementById('round-detail');
+        if (!idEl || !outEl) return;
+        const id = idEl.value.trim();
+        if (!id) { outEl.textContent = 'Enter round ID'; return; }
+        const c = buildContract();
+        if (!c) { outEl.textContent = 'Contract not ready'; return; }
+        try {
+          const r = await c.getRound(id);
+          outEl.textContent = JSON.stringify({ promptDigest: r[0], responseRoot: r[1], startedAt: r[2].toString(), sealedAt: r[3].toString(), finalized: r[4], confidenceTier: r[5], proposer: r[6] }, null, 2);
+        } catch (e) {
+          outEl.textContent = 'Error: ' + (e.message || e);
+        }
+      }
+
+      async function depositStake() {
+        const el = document.getElementById('action-deposit-amount');
+        if (!el) return;
+        const amount = el.value.trim();
+        if (!amount) { showMsg('Enter amount', 'err'); return; }
+        if (!signer) { showMsg('Connect wallet first', 'err'); return; }
+        const c = buildContract();
